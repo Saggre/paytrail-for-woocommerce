@@ -38,6 +38,7 @@ use WC_Order_Item_Product;
 use WC_Order_Item_Fee;
 use WC_Order_Item_Shipping;
 use WC_Payment_Token_CC;
+use WC_Tax;
 
 /**
  * Class Gateway
@@ -2977,6 +2978,13 @@ final class Gateway extends \WC_Payment_Gateway {
 
 		if ( $total_price > 0 && $tax_total > 0 ) {
 			$tax_rate = NumberUtil::round( ( $tax_total / $total_price ) * 100, self::TAX_RATE_PRECISION );
+		} elseif ( 0.0 === (float) $total_price && ! empty( $taxes['total'] ) ) {
+			// A free item, such as a bundled product, has no tax to divide, so use the rates WooCommerce applied to it.
+			$tax_rate = 0;
+			foreach ( array_keys( $taxes['total'] ) as $tax_rate_id ) {
+				$tax_rate += (float) WC_Tax::get_rate_percent_value( $tax_rate_id );
+			}
+			$tax_rate = NumberUtil::round( $tax_rate, self::TAX_RATE_PRECISION );
 		} else {
 			$tax_rate = 0;
 		}
